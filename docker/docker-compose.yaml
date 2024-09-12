@@ -191,6 +191,12 @@ services:
       - ./volumes/app/storage:/app/api/storage
     networks:
       - default
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.dify-api.rule=Host(`dify.api.kodescraft.com`) || Host(`dify.api.app.kodescraft.com`) || Host(`dify.console.api.kodescraft.com`)"
+      - "traefik.http.routers.dify-api.entrypoints=https"
+      - "traefik.http.routers.dify-api.tls.certresolver=letsencrypt"
+      - "traefik.http.services.dify-api.loadbalancer.server.port=5001"
 
   # worker service
   # The Celery worker for processing the queue.
@@ -219,6 +225,12 @@ services:
       CONSOLE_API_URL: ${CONSOLE_API_URL:-}
       APP_API_URL: ${APP_API_URL:-}
       SENTRY_DSN: ${WEB_SENTRY_DSN:-}
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.dify-web.rule=Host(`dify.kodescraft.com`)"
+      - "traefik.http.routers.dify-web.entrypoints=https"
+      - "traefik.http.routers.dify-web.tls.certresolver=letsencrypt"
+      - "traefik.http.services.dify-web.loadbalancer.server.port=3000"
 
   # The postgres database.
   db:
