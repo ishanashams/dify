@@ -6,7 +6,6 @@ services:
     image: langgenius/dify-api:0.8.0
     restart: always
     environment:
-      <<: *shared-api-worker-env
       MODE: api
       CONSOLE_API_URL: ${CONSOLE_API_URL}
       CONSOLE_WEB_URL: ${CONSOLE_WEB_URL}
@@ -17,9 +16,21 @@ services:
       INIT_PASSWORD: ${INIT_PASSWORD}
       WEB_API_CORS_ALLOW_ORIGINS: ${WEB_API_CORS_ALLOW_ORIGINS}
       CONSOLE_CORS_ALLOW_ORIGINS: ${CONSOLE_CORS_ALLOW_ORIGINS}
+      DB_USERNAME: ${DB_USERNAME:-postgres}
+      DB_PASSWORD: ${DB_PASSWORD:-difyai123456}
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_DATABASE: ${DB_DATABASE:-dify}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-difyai123456}
+      VECTOR_STORE: weaviate
+      WEAVIATE_ENDPOINT: http://weaviate:8080
+      WEAVIATE_API_KEY: ${WEAVIATE_API_KEY:-WVF5YThaHlkYwhGUSmCRgsX3tD5ngdN8pkih}
     depends_on:
       - db
       - redis
+      - weaviate
     volumes:
       - ./volumes/app/storage:/app/api/storage
     networks:
@@ -28,13 +39,17 @@ services:
       - "traefik.enable=true"
       - "traefik.http.routers.dify-api.rule=Host(`dify.api.kodescraft.com`)"
       - "traefik.http.services.dify-api.loadbalancer.server.port=5001"
+      - "traefik.http.middlewares.cors-dify.headers.accesscontrolalloworiginlist=${WEB_API_CORS_ALLOW_ORIGINS}"
+      - "traefik.http.middlewares.cors-dify.headers.accesscontrolallowmethods=GET,POST,PUT,DELETE,OPTIONS"
+      - "traefik.http.middlewares.cors-dify.headers.accesscontrolallowheaders=*"
+      - "traefik.http.middlewares.cors-dify.headers.accesscontrolallowcredentials=true"
+      - "traefik.http.routers.dify-api.middlewares=cors-dify"
 
   # worker service
   worker:
     image: langgenius/dify-api:0.8.0
     restart: always
     environment:
-      <<: *shared-api-worker-env
       MODE: worker
       CONSOLE_API_URL: ${CONSOLE_API_URL}
       CONSOLE_WEB_URL: ${CONSOLE_WEB_URL}
@@ -42,9 +57,21 @@ services:
       APP_API_URL: ${APP_API_URL}
       APP_WEB_URL: ${APP_WEB_URL}
       SECRET_KEY: ${SECRET_KEY}
+      DB_USERNAME: ${DB_USERNAME:-postgres}
+      DB_PASSWORD: ${DB_PASSWORD:-difyai123456}
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_DATABASE: ${DB_DATABASE:-dify}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-difyai123456}
+      VECTOR_STORE: weaviate
+      WEAVIATE_ENDPOINT: http://weaviate:8080
+      WEAVIATE_API_KEY: ${WEAVIATE_API_KEY:-WVF5YThaHlkYwhGUSmCRgsX3tD5ngdN8pkih}
     depends_on:
       - db
       - redis
+      - weaviate
     volumes:
       - ./volumes/app/storage:/app/api/storage
     networks:
@@ -65,16 +92,16 @@ services:
       - "traefik.enable=true"
       - "traefik.http.routers.dify-web.rule=Host(`dify.kodescraft.com`)"
       - "traefik.http.services.dify-web.loadbalancer.server.port=3000"
+      - "traefik.http.routers.dify-web.middlewares=cors-dify"
 
   # The postgres database
   db:
     image: postgres:15-alpine
     restart: always
     environment:
-      PGUSER: ${PGUSER:-postgres}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-difyai123456}
-      POSTGRES_DB: ${POSTGRES_DB:-dify}
-      PGDATA: ${PGDATA:-/var/lib/postgresql/data/pgdata}
+      POSTGRES_USER: ${DB_USERNAME:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-difyai123456}
+      POSTGRES_DB: ${DB_DATABASE:-dify}
     volumes:
       - ./volumes/db/data:/var/lib/postgresql/data
     networks:
@@ -118,7 +145,7 @@ services:
       DEFAULT_VECTORIZER_MODULE: ${WEAVIATE_DEFAULT_VECTORIZER_MODULE:-none}
       CLUSTER_HOSTNAME: ${WEAVIATE_CLUSTER_HOSTNAME:-node1}
       AUTHENTICATION_APIKEY_ENABLED: ${WEAVIATE_AUTHENTICATION_APIKEY_ENABLED:-true}
-      AUTHENTICATION_APIKEY_ALLOWED_KEYS: ${WEAVIATE_AUTHENTICATION_APIKEY_ALLOWED_KEYS:-WVF5YThaHlkYwhGUSmCRgsX3tD5ngdN8pkih}
+      AUTHENTICATION_APIKEY_ALLOWED_KEYS: ${WEAVIATE_API_KEY:-WVF5YThaHlkYwhGUSmCRgsX3tD5ngdN8pkih}
       AUTHENTICATION_APIKEY_USERS: ${WEAVIATE_AUTHENTICATION_APIKEY_USERS:-hello@dify.ai}
       AUTHORIZATION_ADMINLIST_ENABLED: ${WEAVIATE_AUTHORIZATION_ADMINLIST_ENABLED:-true}
       AUTHORIZATION_ADMINLIST_USERS: ${WEAVIATE_AUTHORIZATION_ADMINLIST_USERS:-hello@dify.ai}
