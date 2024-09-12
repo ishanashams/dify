@@ -37,7 +37,7 @@ services:
       - coolify
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.dify-api.rule=Host(`dify.api.kodescraft.com`) || Host(`dify.console.api.kodescraft.com`)"
+      - "traefik.http.routers.dify-api.rule=Host(`dify.api.kodescraft.com`) || Host(`dify.console.api.kodescraft.com`) || Host(`https://dify.api.app.kodescraft.com`)"
       - "traefik.http.services.dify-api.loadbalancer.server.port=5001"
       - "traefik.http.routers.dify-api.middlewares=dify-cors@file"
       - "traefik.http.routers.dify-api.entrypoints=https"
